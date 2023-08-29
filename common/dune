@@ -1,0 +1,2 @@
+(library (name ppx_quick_test_common) (libraries base)
+ (preprocess (pps ppx_jane)))
