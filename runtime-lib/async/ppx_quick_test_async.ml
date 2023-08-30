@@ -2,14 +2,14 @@ open! Core
 open Async_kernel
 
 let run
-      (type a)
-      ~here_pos
-      ?(config : Base_quickcheck.Test.Config.t option)
-      ?cr
-      ~examples
-      ?hide_positions
-      (module M : Base_quickcheck.Test.S with type t = a)
-      ~(f : a -> unit Deferred.t)
+  (type a)
+  ~here_pos
+  ?(config : Base_quickcheck.Test.Config.t option)
+  ?cr
+  ~examples
+  ?hide_positions
+  (module M : Base_quickcheck.Test.S with type t = a)
+  ~(f : a -> unit Deferred.t)
   =
   let seed =
     Option.map config ~f:(fun config ->
@@ -40,28 +40,28 @@ let run
         ~shrinker:M.quickcheck_shrinker
         M.quickcheck_generator
         ~f:(fun elt ->
-          let crs = Queue.create () in
-          let%bind () =
-            Expect_test_helpers_async.set_temporarily_async
-              Expect_test_helpers_base.on_print_cr
-              (Queue.enqueue crs)
-              ~f:(fun () ->
-                Expect_test_helpers_async.require_does_not_raise_async
-                  here_pos
-                  ?cr
-                  ?hide_positions
-                  (fun () ->
-                     let%bind () = f elt in
-                     Ppx_quick_test_runtime_lib.assert_no_expect_test_trailing_output
-                       here_pos
-                       M.sexp_of_t
-                       elt;
-                     return ()))
-          in
-          (match Queue.is_empty crs with
-           | true -> ()
-           | false -> Ivar.fill_if_empty ivar (Error (elt, Queue.to_list crs)));
-          return ())
+        let crs = Queue.create () in
+        let%bind () =
+          Expect_test_helpers_async.set_temporarily_async
+            Expect_test_helpers_base.on_print_cr
+            (Queue.enqueue crs)
+            ~f:(fun () ->
+            Expect_test_helpers_async.require_does_not_raise_async
+              here_pos
+              ?cr
+              ?hide_positions
+              (fun () ->
+              let%bind () = f elt in
+              Ppx_quick_test_runtime_lib.assert_no_expect_test_trailing_output
+                here_pos
+                M.sexp_of_t
+                elt;
+              return ()))
+        in
+        (match Queue.is_empty crs with
+         | true -> ()
+         | false -> Ivar.fill_if_empty ivar (Error (elt, Queue.to_list crs)));
+        return ())
     in
     Ivar.fill_if_empty ivar (Ok ());
     return ()
@@ -70,7 +70,7 @@ let run
 ;;
 
 module Ppx_quick_test_core = Ppx_quick_test_runtime_lib.Make (struct
-    module IO = Deferred
+  module IO = Deferred
 
-    let run = run
-  end)
+  let run = run
+end)

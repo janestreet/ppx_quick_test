@@ -25,7 +25,7 @@ module type S = sig
   val run_quick_test
     :  here_pos:Source_code_position.t
     -> ?config:Base_quickcheck.Test.Config.t
-    (** default is [Base_quickcheck.Test.default_config] *)
+         (** default is [Base_quickcheck.Test.default_config] *)
     -> ?cr:CR.t (** default is [CR] *)
     -> ?hide_positions:bool (** default is [false] when [cr=CR], [true] otherwise *)
     -> ?examples:'a list
@@ -35,7 +35,7 @@ module type S = sig
     -> shrinker:'a Base_quickcheck.Shrinker.t
     -> filename:string
     -> error_already_placed:bool
-    (** note: the instance is passed across all quick test calls within a file (using enclose_impl) *)
+         (** note: the instance is passed across all quick test calls within a file (using enclose_impl) *)
     -> ('a -> unit IO.t)
     -> unit IO.t
 end
@@ -64,19 +64,19 @@ module Make (Arg : Arg) = struct
   let map = IO.map
 
   let run_quick_test
-        (type a)
-        ~here_pos
-        ?config
-        ?cr
-        ?hide_positions
-        ?(examples = [])
-        ~(sexp_examples : a Sexp_examples.t)
-        ~sexp_of
-        ~generator
-        ~shrinker
-        ~filename
-        ~error_already_placed
-        f
+    (type a)
+    ~here_pos
+    ?config
+    ?cr
+    ?hide_positions
+    ?(examples = [])
+    ~(sexp_examples : a Sexp_examples.t)
+    ~sexp_of
+    ~generator
+    ~shrinker
+    ~filename
+    ~error_already_placed
+    f
     =
     let all_examples = examples @ Sexp_examples.get_parsed_examples sexp_examples in
     let all_examples_set = all_examples |> List.map ~f:sexp_of |> Sexp.Set.of_list in

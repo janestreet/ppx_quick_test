@@ -88,7 +88,6 @@ module Parse_result = struct
     }
 end
 
-
 let declare_single_expr_attribute (name : Attribute_name.t) ~context =
   Attribute.declare
     (Attribute_name.to_string name)
@@ -100,8 +99,8 @@ let declare_single_expr_attribute (name : Attribute_name.t) ~context =
 let pass_through_attributes =
   Attribute_name.pass_throughs
   |> List.map ~f:(fun (attribute_name, parameter_name) ->
-    ( parameter_name
-    , declare_single_expr_attribute attribute_name ~context:Attribute.Context.Pattern ))
+       ( parameter_name
+       , declare_single_expr_attribute attribute_name ~context:Attribute.Context.Pattern ))
 ;;
 
 let sexp_examples_attribute =
@@ -159,8 +158,8 @@ For example:
 let parse_attribute_from_context ~context ~attribute =
   Attribute.consume_res attribute context
   |> Result.map ~f:(function
-    | Some (new_context, expr) -> new_context, Some expr
-    | None -> context, None)
+       | Some (new_context, expr) -> new_context, Some expr
+       | None -> context, None)
   |> function
   | Ok res -> res
   | Error error_list ->
@@ -183,8 +182,8 @@ let parse_pass_through_attributes_from_pattern pattern =
       pass_through_attributes
       ~init:pattern
       ~f:(fun pattern (param_name, attribute) ->
-        let pattern, expr = parse_attribute_from_context ~context:pattern ~attribute in
-        pattern, Option.map expr ~f:(fun expr -> param_name, expr))
+      let pattern, expr = parse_attribute_from_context ~context:pattern ~attribute in
+      pattern, Option.map expr ~f:(fun expr -> param_name, expr))
   in
   let attributes = List.filter_opt attributes in
   pattern, attributes
@@ -272,7 +271,7 @@ let parse ~pattern ~parameters =
 ;;
 
 let expand_string_constant_to_expression
-      { String_constant.string_value; location = loc; delimiter }
+  { String_constant.string_value; location = loc; delimiter }
   =
   let open (val Ast_builder.make loc) in
   pexp_constant (Pconst_string (string_value, loc, delimiter))
@@ -298,10 +297,10 @@ let expand_not_provided_sexp_examples_expression ~loc =
 ;;
 
 let expand_provided_sexp_examples_expression
-      ~loc
-      ~input_type
-      ~string_constants
-      ~expression_placement_cnum
+  ~loc
+  ~input_type
+  ~string_constants
+  ~expression_placement_cnum
   =
   let open (val Ast_builder.make loc) in
   let string_constant_exprs =
@@ -339,8 +338,8 @@ let expand_generator_argument (generators : Generator.t list) ~loc =
   let generator_type =
     generators
     |> List.map ~f:(function
-      | Default type_ -> type_
-      | Custom expr -> [%type: [%custom [%e expr]]])
+         | Default type_ -> type_
+         | Custom expr -> [%type: [%custom [%e expr]]])
     |> ptyp_tuple
   in
   let expr = hide_expression [%expr [%quickcheck.generator: [%t generator_type]]] in
@@ -353,8 +352,8 @@ let expand_shrinker_argument (shrinkers : Shrinker.t list) ~loc =
   let shrinkers_type =
     shrinkers
     |> List.map ~f:(function
-      | Default type_ -> type_
-      | Custom expr -> [%type: [%custom [%e expr]]])
+         | Default type_ -> type_
+         | Custom expr -> [%type: [%custom [%e expr]]])
     |> ptyp_tuple
   in
   let expr = hide_expression [%expr [%quickcheck.shrinker: [%t shrinkers_type]]] in

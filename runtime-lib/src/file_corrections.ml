@@ -69,13 +69,13 @@ let global_registry = ref String.Map.empty
 let create ~filename =
   let new_ = { insertions = []; filename; disabled = false } in
   global_registry
-  := match Map.add !global_registry ~key:filename ~data:new_ with
-    | `Ok map -> map
-    | `Duplicate ->
-      raise_s
-        [%message
-          "ppx_quick_test bug: tried to create a registry for the same file twice"
-            ~duplicate:(filename : string)]
+    := match Map.add !global_registry ~key:filename ~data:new_ with
+       | `Ok map -> map
+       | `Duplicate ->
+         raise_s
+           [%message
+             "ppx_quick_test bug: tried to create a registry for the same file twice"
+               ~duplicate:(filename : string)]
 ;;
 
 let make_corrected_file ~filename =

@@ -11,7 +11,6 @@ type t =
   ; value_binding_attributes : attributes
   }
 
-
 let parse_name_from_pattern pattern =
   match pattern.ppat_desc with
   | Ppat_any -> None
@@ -157,11 +156,11 @@ let expand_quickcheck_call loc parameters body attributes ~has_errors =
 ;;
 
 let expand_to_value_binding_expression
-      loc
-      parameters
-      body
-      quickcheck_failed_expects
-      attributes
+  loc
+  parameters
+  body
+  quickcheck_failed_expects
+  attributes
   =
   let open (val Ast_builder.make loc) in
   let quickcheck_call =
@@ -226,14 +225,14 @@ let expand_to_value_binding loc name parameters body quickcheck_failed_expects a
    - We also pass user provided attributes as arguments to run_quick_test
 *)
 let expand
-      { loc
-      ; name
-      ; parameters
-      ; body
-      ; quickcheck_failed_expects
-      ; attributes
-      ; value_binding_attributes
-      }
+  { loc
+  ; name
+  ; parameters
+  ; body
+  ; quickcheck_failed_expects
+  ; attributes
+  ; value_binding_attributes
+  }
   =
   let open (val Ast_builder.make loc) in
   let value_binding =
