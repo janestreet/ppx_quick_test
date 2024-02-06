@@ -28,7 +28,8 @@ let%quick_test "name" = fun (<param> : <type>) ... (<param> : <type>) -> <body>
 - Types must be provided for all parameters
 - Types must implement `sexp_of_t`
 - The `<body>` tests some property of the supplied parameters.
-- The `<body>` returns a unit on a success, and raises on a failure
+- The `<body>` returns a `unit` on a success, and raises on a failure. If 
+  `ppx_quick_test_async` is opened, it returns a `unit Deferred.t`.
 
 
 ## How do I get started?
@@ -39,7 +40,7 @@ Add `ppx_quick_test` as a preprocessor to your build file. For example
 (library ((name your_lib) (preprocess (pps (ppx_quick_test)))))
 ```
 
-NOTE: If you are using dune, the syntax is:
+NOTE: If you are using dune outside of Jane Street, the syntax is:
 
 ```lisp skip
 (library (name your_lib) (preprocess (pps ppx_quick_test)))
@@ -49,13 +50,12 @@ NOTE: If you are using dune, the syntax is:
 
 
 If quick test finds a failing input, ppx_quick_test can "remember" failing inputs with
-`[@remember_failures]`.
+`[@remember_failures]`. Using this requires your type to additionally have `t_of_sexp`.
 
 This feature is opt-in as it might not make sense to remember every test case that has
 failed, specially the failures that arise as you are writing your generator. After you've
 finished writing your generator, and would like to remember future failures, you can add
 `[@remember_failures]`.
-
 
 After the attribute is added, every time a failures occurs, a .corrected file will be
 produced that adds the failing input next to the `[@remember_failures]` attribute. The
@@ -192,11 +192,17 @@ let%quick_test (_ [@config Base_quickcheck.Test.default_config]
 ;;
 ```
 
+### Using Async
+
+If you'd like to write a quick_test that uses Async, you can use the library
+`ppx_quick_test_async` by opening it at the top of your test file. This will
+make your `let%quick_test` need to return a `unit Deferred.t` instead of a `unit`.
+
 ## FAQ
 
 Q: Why do the input types appear as a tuple in some contexts (e.g. quickcheck generation
-and example passing) even though we provide a function that takes in multiple paramters
-(instead of a single paramter of the tuple-typed)?
+and example passing) even though we provide a function that takes in multiple parameters
+(instead of a single parameter of the tuple-typed)?
 
 A: We translate the provided multi-parameter function to a single parameter function that takes
 in the tuple of input types. We perform this translation to make the function syntax easier to
@@ -220,7 +226,7 @@ Q : How do I resolve error: `Error: unbound value <your_type>.quickcheck_generat
 A: This is caused by a failure to generate a quickcheck generator on `your_type`.
 
    Options:
-   - Add `quickcheck_generator` to `<your_type>` by using `[@@deriving quickcheck]` or specifying it manually
+   - Add `quickcheck_generator` to `<your_type>` by using `[@@deriving quickcheck ~generator]` or specifying it manually
      (`[%quickcheck.generator : <type>]` could be helpful)
    - Provide a generator to use using the `[@generator]` attribute (see the Attributes section)
 
@@ -230,10 +236,10 @@ Q : How do I resolve error: `Error: unbound value <your_type>.quickcheck_shrinke
 
 A: This is caused by a failure to generate a quickcheck shrinker on `your_type`.
    Options:
-   - Add `quickcheck_shrinker` to `<your_type>` by using `[@@deriving quickcheck]` or specifying it manually
+   - Add `quickcheck_shrinker` to `<your_type>` by using `[@@deriving quickcheck ~shrinker]` or specifying it manually
      (`[%quickcheck.shrinker : <type>]` could be helpful)
    - Provide shrinker to use using the `[@shrinker]` attribute (see the Attributes section)
-   - Disable shrinking by providing the atomic shrinker: `[@shrinker Shrinker.atomic]`
+   - Disable shrinking by providing the atomic shrinker: `[@shrinker Base_quickcheck.Shrinker.atomic]`
 
 
 Q : Why don't you support syntax `let%quick_test "name" (a : int) (b : int) = ...` instead of

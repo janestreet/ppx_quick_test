@@ -1,4 +1,6 @@
-(library (name ppx_quick_test_expander)
+(library
+ (name ppx_quick_test_expander)
  (libraries core ppxlib ppx_here.expander core_kernel.reversed_list
-  ppx_quick_test_common)
- (preprocess (pps ppxlib.metaquot ppx_jane)))
+   ppx_quick_test_common)
+ (preprocess
+  (pps ppxlib.metaquot ppx_jane)))
