@@ -10,8 +10,7 @@ let assert_no_expect_test_trailing_output position sexp_of input =
     let input = sexp_of input in
     raise_s
       [%message
-        "unexpected trailing output, consider adding a trailing [%expect \"\"] at the \
-         end of your function body."
+        {|unexpected trailing output, consider adding a trailing [%expect] at the end of your function body.|}
           (trailing_output : string)
           "generated using test input"
           (input : Sexp.t)]
@@ -21,6 +20,7 @@ module type S = sig
   module IO : T1
 
   val map : 'a IO.t -> f:('a -> 'b) -> 'b IO.t
+  val return : 'a -> 'a IO.t
 
   val run_quick_test
     :  here_pos:Source_code_position.t
@@ -45,23 +45,23 @@ module type Arg = sig
     include T1
 
     val map : 'a t -> f:('a -> 'b) -> 'b t
+    val return : 'a -> 'a t
   end
 
   val run
     :  here_pos:Lexing.position
     -> ?config:Base_quickcheck.Test.Config.t
-    -> ?cr:CR.t
     -> examples:'a list
-    -> ?hide_positions:bool
     -> (module Base_quickcheck.Test.S with type t = 'a)
-    -> f:('a -> unit IO.t)
-    -> (unit, 'a * string list) result IO.t
+    -> f:('a -> unit Or_error.t IO.t)
+    -> (unit, 'a * Error.t) result IO.t
 end
 
 module Make (Arg : Arg) = struct
   module IO = Arg.IO
 
   let map = IO.map
+  let return = IO.return
 
   let run_quick_test
     (type a)
@@ -76,7 +76,7 @@ module Make (Arg : Arg) = struct
     ~shrinker
     ~filename
     ~error_already_placed
-    f
+    (f : a -> unit IO.t)
     =
     let all_examples = examples @ Sexp_examples.get_parsed_examples sexp_examples in
     let all_examples_set = all_examples |> List.map ~f:sexp_of |> Sexp.Set.of_list in
@@ -84,9 +84,7 @@ module Make (Arg : Arg) = struct
       (Arg.run
          ~here_pos
          ?config
-         ?cr
          ~examples:all_examples
-         ?hide_positions
          (module struct
            type t = a
 
@@ -94,7 +92,14 @@ module Make (Arg : Arg) = struct
            let quickcheck_generator = generator
            let quickcheck_shrinker = shrinker
          end)
-         ~f)
+         ~f:(fun input ->
+           match Or_error.try_with (fun () -> f input) with
+           | Ok x ->
+             (* NOTE: This [map] is important in the [Deferred] case as it waits for the
+                Deferred effect to finish. Otherwise there is a leak/explosion of pending
+                jobs that result in really weird test behaviors. *)
+             IO.map x ~f:(fun () -> Ok ())
+           | Error error -> IO.return (Error error)))
       ~f:(fun quickcheck_results ->
         Result.iter_error quickcheck_results ~f:(fun (input, output) ->
           let input_sexp = sexp_of input in
@@ -109,6 +114,6 @@ module Make (Arg : Arg) = struct
           print_s
             [%message
               Ppx_quick_test_common.test_failed_message ~input:(input_sexp : Sexp.t)];
-          List.iter output ~f:print_endline))
+          print_cr ?cr ?hide_positions here_pos [%sexp (output : Error.t)]))
   ;;
 end

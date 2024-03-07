@@ -195,8 +195,9 @@ let%quick_test (_ [@config Base_quickcheck.Test.default_config]
 ### Using Async
 
 If you'd like to write a quick_test that uses Async, you can use the library
-`ppx_quick_test_async` by opening it at the top of your test file. This will
-make your `let%quick_test` need to return a `unit Deferred.t` instead of a `unit`.
+`ppx_quick_test_async` by adding it to your jbuild's `libraries` field and opening it at
+the top of your test file. This will make your `let%quick_test` need to return a `unit
+Deferred.t` instead of a `unit`.
 
 ## FAQ
 

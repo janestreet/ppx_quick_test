@@ -13,6 +13,7 @@ module type S = sig
   module IO : T1
 
   val map : 'a IO.t -> f:('a -> 'b) -> 'b IO.t
+  val return : 'a -> 'a IO.t
 
   val run_quick_test
     :  here_pos:Source_code_position.t
@@ -37,17 +38,16 @@ module type Arg = sig
     include T1
 
     val map : 'a t -> f:('a -> 'b) -> 'b t
+    val return : 'a -> 'a t
   end
 
   val run
     :  here_pos:Lexing.position
     -> ?config:Base_quickcheck.Test.Config.t
-    -> ?cr:CR.t
     -> examples:'a list
-    -> ?hide_positions:bool
     -> (module Base_quickcheck.Test.S with type t = 'a)
-    -> f:('a -> unit IO.t)
-    -> (unit, 'a * string list) result IO.t
+    -> f:('a -> unit Or_error.t IO.t)
+    -> (unit, 'a * Error.t) result IO.t
 end
 
 module Make (Arg : Arg) : S with module IO = Arg.IO
