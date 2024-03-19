@@ -1,4 +1,5 @@
 (library
+ (public_name ppx_quick_test.core)
  (name ppx_quick_test_core)
  (libraries core expect_test_helpers_core.expect_test_helpers_base
    ppx_quick_test_runtime_lib)

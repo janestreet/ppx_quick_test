@@ -1,14 +1,9 @@
 (library
  (name ppx_quick_test)
+ (public_name ppx_quick_test)
  (libraries ppx_quick_test_expander ppx_expect base_quickcheck.ppx_quickcheck
    ppx_sexp_conv)
  (kind ppx_rewriter)
  (preprocess no_preprocessing)
  (ppx_runtime_libraries expect_test_helpers_core.expect_test_helpers_base
    core ppx_quick_test_core ppx_quick_test_runtime_lib))
-
-(rule
- (targets explicit_dependencies.ml explicit_dependencies.mli)
- (deps %{workspace_root}/bin/gen-explicit-dependencies.sh)
- (action
-  (bash "%{deps} ppx_expect ppx_quickcheck ppx_sexp_conv")))

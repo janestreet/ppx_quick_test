@@ -3,17 +3,27 @@ open Expect_test_helpers_base
 module File_corrections = File_corrections
 module Sexp_examples = Sexp_examples
 
+module Trailing_output_error = struct
+  type t =
+    | Ppx_quick_test_trailing_output_error of
+        { trailing_output : string
+        ; input : Sexp.t
+        }
+  [@@deriving sexp]
+
+  let of_error error = Option.try_with (fun () -> [%of_sexp: t] [%sexp (error : Error.t)])
+end
+
 let assert_no_expect_test_trailing_output position sexp_of input =
   match Expect_test_helpers_base.expect_test_output position with
   | "" -> ()
   | trailing_output ->
     let input = sexp_of input in
-    raise_s
-      [%message
-        {|unexpected trailing output, consider adding a trailing [%expect] at the end of your function body.|}
-          (trailing_output : string)
-          "generated using test input"
-          (input : Sexp.t)]
+    let error =
+      Trailing_output_error.Ppx_quick_test_trailing_output_error
+        { trailing_output; input }
+    in
+    raise_s [%sexp (error : Trailing_output_error.t)]
 ;;
 
 module type S = sig
@@ -114,6 +124,18 @@ module Make (Arg : Arg) = struct
           print_s
             [%message
               Ppx_quick_test_common.test_failed_message ~input:(input_sexp : Sexp.t)];
-          print_cr ?cr ?hide_positions here_pos [%sexp (output : Error.t)]))
+          match Trailing_output_error.of_error output with
+          | None -> print_cr ?cr ?hide_positions here_pos [%sexp (output : Error.t)]
+          | Some (Ppx_quick_test_trailing_output_error { trailing_output; input }) ->
+            print_cr
+              ?cr
+              ?hide_positions
+              here_pos
+              [%message
+                "Unexpected trailing output, consider adding a trailing [%expect] at the \
+                 end of your function body."
+                  (input : Sexp.t)];
+            print_endline "Trailing output:";
+            print_string trailing_output))
   ;;
 end

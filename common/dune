@@ -1,4 +1,5 @@
 (library
+ (public_name ppx_quick_test.common)
  (name ppx_quick_test_common)
  (libraries base)
  (preprocess

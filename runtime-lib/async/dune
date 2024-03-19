@@ -1,6 +1,7 @@
 (library
+ (public_name ppx_quick_test.async)
  (name ppx_quick_test_async)
- (libraries core async async_kernel async.async_quickcheck
-   expect_test_helpers_async ppx_quick_test_runtime_lib)
+ (libraries core async_kernel async_quickcheck
+   ppx_quick_test_runtime_lib)
  (preprocess
   (pps ppx_sexp_message ppx_sexp_conv ppx_jane)))

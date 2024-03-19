@@ -3,6 +3,17 @@ open Expect_test_helpers_base
 module File_corrections = File_corrections
 module Sexp_examples = Sexp_examples
 
+module Trailing_output_error : sig
+  type t =
+    | Ppx_quick_test_trailing_output_error of
+        { trailing_output : string
+        ; input : Sexp.t
+        }
+  [@@deriving sexp]
+
+  val of_error : Error.t -> t option
+end
+
 val assert_no_expect_test_trailing_output
   :  Lexing.position
   -> ('a -> Sexp.t)
