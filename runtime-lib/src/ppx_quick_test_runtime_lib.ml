@@ -11,11 +11,20 @@ module Trailing_output_error = struct
         }
   [@@deriving sexp]
 
-  let of_error error = Option.try_with (fun () -> [%of_sexp: t] [%sexp (error : Error.t)])
+  module With_backtrace = struct
+    type nonrec t = t * string list [@@deriving sexp]
+  end
+
+  let of_error error =
+    let error_as_sexp = [%sexp (error : Error.t)] in
+    Option.first_some
+      (Option.try_with (fun () -> [%of_sexp: t] error_as_sexp, []))
+      (Option.try_with (fun () -> [%of_sexp: With_backtrace.t] error_as_sexp))
+  ;;
 end
 
 let assert_no_expect_test_trailing_output position sexp_of input =
-  match Expect_test_helpers_base.expect_test_output position with
+  match Expect_test_helpers_base.expect_test_output ~here:position () with
   | "" -> ()
   | trailing_output ->
     let input = sexp_of input in
@@ -39,6 +48,7 @@ module type S = sig
     -> ?cr:CR.t (** default is [CR] *)
     -> ?hide_positions:bool (** default is [false] when [cr=CR], [true] otherwise *)
     -> ?examples:'a list
+    -> ?trials:int (** if provided, overrides the number of trials in [config] *)
     -> sexp_examples:'a Sexp_examples.t
     -> sexp_of:('a -> Sexp.t)
     -> generator:'a Base_quickcheck.Generator.t
@@ -61,6 +71,7 @@ module type Arg = sig
   val run
     :  here_pos:Lexing.position
     -> ?config:Base_quickcheck.Test.Config.t
+    -> ?trials:int
     -> examples:'a list
     -> (module Base_quickcheck.Test.S with type t = 'a)
     -> f:('a -> unit Or_error.t IO.t)
@@ -80,6 +91,7 @@ module Make (Arg : Arg) = struct
     ?cr
     ?hide_positions
     ?(examples = [])
+    ?trials
     ~(sexp_examples : a Sexp_examples.t)
     ~sexp_of
     ~generator
@@ -88,12 +100,14 @@ module Make (Arg : Arg) = struct
     ~error_already_placed
     (f : a -> unit IO.t)
     =
+    Printexc.record_backtrace true;
     let all_examples = examples @ Sexp_examples.get_parsed_examples sexp_examples in
     let all_examples_set = all_examples |> List.map ~f:sexp_of |> Sexp.Set.of_list in
     IO.map
       (Arg.run
          ~here_pos
          ?config
+         ?trials
          ~examples:all_examples
          (module struct
            type t = a
@@ -103,7 +117,7 @@ module Make (Arg : Arg) = struct
            let quickcheck_shrinker = shrinker
          end)
          ~f:(fun input ->
-           match Or_error.try_with (fun () -> f input) with
+           match Or_error.try_with ~backtrace:true (fun () -> f input) with
            | Ok x ->
              (* NOTE: This [map] is important in the [Deferred] case as it waits for the
                 Deferred effect to finish. Otherwise there is a leak/explosion of pending
@@ -125,17 +139,24 @@ module Make (Arg : Arg) = struct
             [%message
               Ppx_quick_test_common.test_failed_message ~input:(input_sexp : Sexp.t)];
           match Trailing_output_error.of_error output with
-          | None -> print_cr ?cr ?hide_positions here_pos [%sexp (output : Error.t)]
-          | Some (Ppx_quick_test_trailing_output_error { trailing_output; input }) ->
+          | None -> print_cr ?cr ?hide_positions ~here:here_pos [%sexp (output : Error.t)]
+          | Some
+              (Ppx_quick_test_trailing_output_error { trailing_output; input }, backtrace)
+            ->
             print_cr
               ?cr
               ?hide_positions
-              here_pos
+              ~here:here_pos
               [%message
                 "Unexpected trailing output, consider adding a trailing [%expect] at the \
                  end of your function body."
                   (input : Sexp.t)];
             print_endline "Trailing output:";
-            print_string trailing_output))
+            print_endline trailing_output;
+            (match backtrace with
+             | [] -> ()
+             | _ ->
+               print_endline "Backtrace:";
+               print_string (String.concat_lines backtrace))))
   ;;
 end

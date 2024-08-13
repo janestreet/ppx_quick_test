@@ -3,6 +3,7 @@ open Ppxlib
 
 type t =
   | Config
+  | Trials
   | Cr
   | Examples
   | Hide_positions
@@ -17,6 +18,7 @@ type t =
 
 let to_arg_label = function
   | Config -> Labelled "config"
+  | Trials -> Labelled "trials"
   | Cr -> Labelled "cr"
   | Examples -> Labelled "examples"
   | Hide_positions -> Labelled "hide_positions"

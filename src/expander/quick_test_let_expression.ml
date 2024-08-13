@@ -45,8 +45,10 @@ let parse_parameters_and_body_from_expression expression
 |}
   in
   let parse_one_parameter expression : (pattern * core_type) option * expression =
-    match expression.pexp_desc with
-    | Pexp_fun (Nolabel, None, pattern, rest_of_expression) ->
+    match
+      Ppxlib_jane.Legacy_pexp_function.legacy_pexp_fun_of_parsetree expression.pexp_desc
+    with
+    | Some (Nolabel, None, pattern, rest_of_expression) ->
       parse_pattern_and_type_from_argument pattern, rest_of_expression
     | _ -> None, expression
   in
@@ -103,12 +105,21 @@ let parse ~loc ~pattern ~expression ~value_binding_attributes =
   }
 ;;
 
-let expand_to_value_binding_pattern loc name =
+let expand_to_value_binding_pattern loc name attributes =
   let open (val Ast_builder.make loc) in
-  Option.value_map
-    name
-    ~f:(fun name -> ppat_constant (Pconst_string (name, loc, None)))
-    ~default:ppat_any
+  let pattern =
+    Option.value_map
+      name
+      ~f:(fun name -> ppat_constant (Pconst_string (name, loc, None)))
+      ~default:ppat_any
+  in
+  let tags_attribute =
+    Quick_test_attributes.tags attributes
+    |> Option.map ~f:(fun tags ->
+      attribute ~name:{ txt = "tags"; loc } ~payload:(PStr [ pstr_eval tags [] ]))
+    |> Option.to_list
+  in
+  { pattern with ppat_attributes = tags_attribute }
 ;;
 
 let expand_parameters_to_input_type loc parameters =
@@ -184,7 +195,7 @@ let expand_to_value_binding_expression
 
 let expand_to_value_binding loc name parameters body quickcheck_failed_expects attributes =
   let open (val Ast_builder.make loc) in
-  let pat = expand_to_value_binding_pattern loc name in
+  let pat = expand_to_value_binding_pattern loc name attributes in
   let expr =
     expand_to_value_binding_expression
       loc
@@ -200,7 +211,7 @@ let expand_to_value_binding loc name parameters body quickcheck_failed_expects a
    The expand function roughly generates the following:
 
    {[
-     let%expect_test "TEST_NAME" =
+     let%expect_test ( "TEST_NAME" [@tags <TAGS> ] ) =
        Ppx_quick_test_core.run_quick_test
          ~here_pos:[%here]
          ~corrections:__ppx_quick_test_file_corrections
@@ -223,6 +234,8 @@ let expand_to_value_binding loc name parameters body quickcheck_failed_expects a
    - We simply pass the value binding attributes through, which allows other ppxs to use
      them further down the line (e.g. [@@expect.uncaught_exn] interacting with let%expect_test)
    - We also pass user provided attributes as arguments to run_quick_test
+   - If an [@tags] attribute is present on the quick_test, it will pass it along to the
+     generated expect test, so one can control if the quick test requires flambda, no-js, etc
 *)
 let expand
   { loc

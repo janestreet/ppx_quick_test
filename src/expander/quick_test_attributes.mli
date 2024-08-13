@@ -18,3 +18,5 @@ val expand_to_args
   -> loc:Location.t
   -> input_type:core_type
   -> (Quick_test_parameter.t * expression) list
+
+val tags : t -> expression option

@@ -87,10 +87,25 @@ Available test scoped attributes are:
 <!-- $MDX file=examples/examples.ml,part=config -->
 ```ocaml
 let%quick_test (_ [@config
-                  { Base_quickcheck.Test.default_config with test_count = 10_000 }])
+                    { Base_quickcheck.Test.default_config with
+                      seed = Deterministic "seed"
+                    }])
   =
   fun (a : int) (b : int) -> assert (a + b = b + a)
 ;;
+```
+
+`[@trials <INT>]`
+
+* Number of quickcheck trials to run.
+* If provided, overrides the [test_count] value in the quickcheck config, even if
+  a [@config] attribute is present.
+* INT Type = positive integer literal
+* INT Default = [config.test_count] value
+
+<!-- $MDX file=examples/examples.ml,part=trials -->
+```ocaml
+let%quick_test (_ [@trials 500]) = fun (a : int) (b : int) -> assert (a + b = b + a)
 ```
 
 `[@cr <EXPR>]`
@@ -113,7 +128,6 @@ let%quick_test (_ [@examples [ 1, 0; 0, 0 ]]) =
 ;;
 ```
 
-
 `[@rembember_failures <SEXP 1> ... <SEXP N>]`
 
 * Machine provided example inputs to test your property
@@ -127,6 +141,19 @@ let%quick_test (_ [@examples [ 1, 0; 0, 0 ]]) =
 let%quick_test _ [@remember_failures {|(1 0)|} {|(0 0)|}] =
   fun (a : int) (b : int) -> assert (a + b = b + a)
 ;;
+```
+
+`[@tags <EXPR>]`
+
+* Tags to pass along to the generated expect test, useful to specify that a quick_test
+  runs in "no-js", "fast-flambda", etc. See the list of supported tags in the
+  [ppx_inline_test docs](https://github.com/janestreet/ppx_inline_test?tab=readme-ov-file#tags)
+* EXPR Type    = `(t1 * ...* tn) list`
+* EXPR Default = `[]`
+
+<!-- $MDX file=examples/examples.ml,part=tags -->
+```ocaml
+let%quick_test (_ [@tags "no-js"]) = fun (a : int) (b : int) -> assert (a + b = b + a)
 ```
 
 ### Type Scoped Attributes

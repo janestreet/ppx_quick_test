@@ -13,12 +13,12 @@ let quick_test =
     Structure_item
     (pattern ())
     (fun ~ctxt value_binding ->
-    let expression = value_binding.pvb_expr in
-    let pattern = value_binding.pvb_pat in
-    let attributes = value_binding.pvb_attributes in
-    let loc = Ppxlib.Expansion_context.Extension.extension_point_loc ctxt in
-    let loc = { loc with loc_ghost = true } in
-    expand ~loc ~pattern ~expression ~attributes)
+       let expression = value_binding.pvb_expr in
+       let pattern = value_binding.pvb_pat in
+       let attributes = value_binding.pvb_attributes in
+       let loc = Ppxlib.Expansion_context.Extension.extension_point_loc ctxt in
+       let loc = { loc with loc_ghost = true } in
+       expand ~loc ~pattern ~expression ~attributes)
 ;;
 
 let enclose_impl = function

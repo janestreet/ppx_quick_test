@@ -1,8 +1,8 @@
 (library
  (name ppx_quick_test)
  (public_name ppx_quick_test)
- (libraries ppx_quick_test_expander ppx_expect base_quickcheck.ppx_quickcheck
-   ppx_sexp_conv)
+ (libraries ppx_quick_test_expander core ppx_expect
+   base_quickcheck.ppx_quickcheck ppx_sexp_conv ppxlib)
  (kind ppx_rewriter)
  (preprocess no_preprocessing)
  (ppx_runtime_libraries expect_test_helpers_core.expect_test_helpers_base

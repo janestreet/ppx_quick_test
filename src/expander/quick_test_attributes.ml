@@ -34,6 +34,7 @@ module Attribute_name = struct
   (* The names of the attributes that are written by the user in the form [@parameter_name] *)
   type t =
     | Config
+    | Trials
     | Cr
     | Examples
     | Hide_positions
@@ -41,12 +42,14 @@ module Attribute_name = struct
     | Shrinker
     | Remember_failures
     | Remember_failures_ignore
+    | Tags
 
   let to_string t =
     let prefix = "quick_test" in
     let body =
       match t with
       | Config -> "config"
+      | Trials -> "trials"
       | Cr -> "cr"
       | Examples -> "examples"
       | Hide_positions -> "hide_positions"
@@ -54,12 +57,14 @@ module Attribute_name = struct
       | Shrinker -> "shrinker"
       | Remember_failures -> "remember_failures"
       | Remember_failures_ignore -> "remember_failures.ignore"
+      | Tags -> "tags"
     in
     [%string "%{prefix}.%{body}"]
   ;;
 
   let pass_throughs =
     [ Config, Quick_test_parameter.Config
+    ; Trials, Quick_test_parameter.Trials
     ; Cr, Quick_test_parameter.Cr
     ; Hide_positions, Quick_test_parameter.Hide_positions
     ; Examples, Quick_test_parameter.Examples
@@ -67,7 +72,15 @@ module Attribute_name = struct
   ;;
 
   let test_scoped =
-    [ Config; Cr; Examples; Remember_failures; Remember_failures_ignore; Hide_positions ]
+    [ Config
+    ; Trials
+    ; Cr
+    ; Examples
+    ; Remember_failures
+    ; Remember_failures_ignore
+    ; Hide_positions
+    ; Tags
+    ]
   ;;
 
   let type_scoped = [ Generator; Shrinker ]
@@ -78,7 +91,9 @@ type t =
   ; sexp_examples : Sexp_examples.t
   ; generators : Generator.t list
   ; shrinkers : Shrinker.t list
+  ; tags : expression option
   }
+[@@deriving fields ~fields ~getters]
 
 module Parse_result = struct
   type nonrec t =
@@ -99,8 +114,8 @@ let declare_single_expr_attribute (name : Attribute_name.t) ~context =
 let pass_through_attributes =
   Attribute_name.pass_throughs
   |> List.map ~f:(fun (attribute_name, parameter_name) ->
-       ( parameter_name
-       , declare_single_expr_attribute attribute_name ~context:Attribute.Context.Pattern ))
+    ( parameter_name
+    , declare_single_expr_attribute attribute_name ~context:Attribute.Context.Pattern ))
 ;;
 
 let sexp_examples_attribute =
@@ -109,6 +124,10 @@ let sexp_examples_attribute =
     Attribute.Context.Pattern
     Ast_pattern.(alt_option (single_expr_payload __) (pstr nil))
     (fun ~attr_loc e -> attr_loc, e)
+;;
+
+let tags_attribute =
+  declare_single_expr_attribute Attribute_name.Tags ~context:Attribute.Context.Pattern
 ;;
 
 let generator_attribute =
@@ -158,8 +177,8 @@ For example:
 let parse_attribute_from_context ~context ~attribute =
   Attribute.consume_res attribute context
   |> Result.map ~f:(function
-       | Some (new_context, expr) -> new_context, Some expr
-       | None -> context, None)
+    | Some (new_context, expr) -> new_context, Some expr
+    | None -> context, None)
   |> function
   | Ok res -> res
   | Error error_list ->
@@ -182,8 +201,8 @@ let parse_pass_through_attributes_from_pattern pattern =
       pass_through_attributes
       ~init:pattern
       ~f:(fun pattern (param_name, attribute) ->
-      let pattern, expr = parse_attribute_from_context ~context:pattern ~attribute in
-      pattern, Option.map expr ~f:(fun expr -> param_name, expr))
+        let pattern, expr = parse_attribute_from_context ~context:pattern ~attribute in
+        pattern, Option.map expr ~f:(fun expr -> param_name, expr))
   in
   let attributes = List.filter_opt attributes in
   pattern, attributes
@@ -236,6 +255,10 @@ let parse_sexp_examples_attribute pattern =
   pattern, sexp_examples
 ;;
 
+let parse_tags_attribute pattern =
+  parse_attribute_from_context ~context:pattern ~attribute:tags_attribute
+;;
+
 let parse_generators_and_shrinkers parameters =
   let resolve_generator ~default ~generator_payload =
     match generator_payload with
@@ -264,9 +287,10 @@ let parse_generators_and_shrinkers parameters =
 let parse ~pattern ~parameters =
   let pattern, pass_through_attrs = parse_pass_through_attributes_from_pattern pattern in
   let pattern, sexp_examples = parse_sexp_examples_attribute pattern in
+  let pattern, tags = parse_tags_attribute pattern in
   let parameters, generators, shrinkers = parse_generators_and_shrinkers parameters in
   assert_no_unused_attributes pattern;
-  let attributes = { pass_through_attrs; sexp_examples; generators; shrinkers } in
+  let attributes = { pass_through_attrs; sexp_examples; generators; shrinkers; tags } in
   { Parse_result.new_pattern = pattern; new_parameters = parameters; attributes }
 ;;
 
@@ -338,8 +362,8 @@ let expand_generator_argument (generators : Generator.t list) ~loc =
   let generator_type =
     generators
     |> List.map ~f:(function
-         | Default type_ -> type_
-         | Custom expr -> [%type: [%custom [%e expr]]])
+      | Default type_ -> type_
+      | Custom expr -> [%type: [%custom [%e expr]]])
     |> ptyp_tuple
   in
   let expr = hide_expression [%expr [%quickcheck.generator: [%t generator_type]]] in
@@ -352,8 +376,8 @@ let expand_shrinker_argument (shrinkers : Shrinker.t list) ~loc =
   let shrinkers_type =
     shrinkers
     |> List.map ~f:(function
-         | Default type_ -> type_
-         | Custom expr -> [%type: [%custom [%e expr]]])
+      | Default type_ -> type_
+      | Custom expr -> [%type: [%custom [%e expr]]])
     |> ptyp_tuple
   in
   let expr = hide_expression [%expr [%quickcheck.shrinker: [%t shrinkers_type]]] in
