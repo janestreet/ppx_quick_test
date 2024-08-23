@@ -1,7 +1,7 @@
 (library
  (name ppx_quick_test_expander)
  (public_name ppx_quick_test.expander)
- (libraries core ppxlib ppxlib_jane ppx_here.expander core_kernel.reversed_list
-   ppx_quick_test_common ppxlib.stdppx)
+ (libraries core ppxlib ppxlib_jane ppx_here.expander
+   core_kernel.reversed_list ppx_quick_test_common ppxlib.stdppx)
  (preprocess
   (pps ppxlib.metaquot ppx_jane)))
