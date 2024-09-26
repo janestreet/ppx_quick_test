@@ -33,8 +33,8 @@ let parse_parameters_and_body_from_expression expression
   : (pattern * core_type) list * expression
   =
   let parse_pattern_and_type_from_argument pattern =
-    match pattern.ppat_desc with
-    | Ppat_constraint (parameter, core_type) -> Some (parameter, core_type)
+    match Ppxlib_jane.Shim.Pattern_desc.of_parsetree pattern.ppat_desc with
+    | Ppat_constraint (parameter, Some core_type, _) -> Some (parameter, core_type)
     | _ ->
       Location.raise_errorf
         ~loc:pattern.ppat_loc
