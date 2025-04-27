@@ -36,12 +36,21 @@ let run
     ~shrinker:M.quickcheck_shrinker
     M.quickcheck_generator
     ~f:(fun elt ->
-      let%bind result = f elt in
-      Ppx_quick_test_runtime_lib.assert_no_expect_test_trailing_output
-        here_pos
-        M.sexp_of_t
-        elt;
-      return result)
+      let crs = Queue.create () in
+      Expect_test_helpers_async.set_temporarily_async
+        Expect_test_helpers_base.on_print_cr
+        (Queue.enqueue crs)
+        ~f:(fun () ->
+          let%bind result = f elt in
+          Ppx_quick_test_runtime_lib.assert_no_expect_test_trailing_output
+            here_pos
+            M.sexp_of_t
+            elt;
+          if Queue.is_empty crs
+          then return result
+          else
+            Deferred.Or_error.error_s
+              [%sexp ({ crs } : Ppx_quick_test_runtime_lib.Queue_of_crs_error.t)]))
 ;;
 
 module Ppx_quick_test_core = Ppx_quick_test_runtime_lib.Make (struct

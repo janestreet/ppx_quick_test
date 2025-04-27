@@ -2,6 +2,7 @@
  (public_name ppx_quick_test.async)
  (name ppx_quick_test_async)
  (libraries core async_kernel async.async_quickcheck
-   ppx_quick_test_runtime_lib)
+   expect_test_helpers_core.expect_test_helpers_base
+   expect_test_helpers_async ppx_quick_test_runtime_lib)
  (preprocess
   (pps ppx_sexp_message ppx_sexp_conv ppx_jane)))

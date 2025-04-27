@@ -23,6 +23,15 @@ module Trailing_output_error = struct
   ;;
 end
 
+module Queue_of_crs_error = struct
+  type t = { crs : string Queue.t } [@@deriving sexp]
+
+  let of_error error =
+    let error_as_sexp = [%sexp (error : Error.t)] in
+    Option.try_with (fun () -> [%of_sexp: t] error_as_sexp)
+  ;;
+end
+
 let assert_no_expect_test_trailing_output position sexp_of input =
   match Expect_test_helpers_base.expect_test_output ~here:position () with
   | "" -> ()
@@ -55,7 +64,8 @@ module type S = sig
     -> shrinker:'a Base_quickcheck.Shrinker.t
     -> filename:string
     -> error_already_placed:bool
-         (** note: the instance is passed across all quick test calls within a file (using enclose_impl) *)
+         (** note: the instance is passed across all quick test calls within a file (using
+             enclose_impl) *)
     -> ('a -> unit IO.t)
     -> unit IO.t
 end
@@ -126,20 +136,30 @@ module Make (Arg : Arg) = struct
            | Error error -> IO.return (Error error)))
       ~f:(fun quickcheck_results ->
         Result.iter_error quickcheck_results ~f:(fun (input, output) ->
-          let input_sexp = sexp_of input in
-          (match Set.mem all_examples_set input_sexp with
-           | true -> ()
-           | false ->
-             Sexp_examples.insertion_for_new_example sexp_examples input_sexp
-             |> Option.iter ~f:(File_corrections.add_insertion ~filename);
-             (match error_already_placed with
+          (match sexp_of input with
+           | input_sexp ->
+             (match Set.mem all_examples_set input_sexp with
               | true -> ()
-              | false -> File_corrections.disable_due_to_pending_error ~filename));
-          print_s
-            [%message
-              Ppx_quick_test_common.test_failed_message ~input:(input_sexp : Sexp.t)];
+              | false ->
+                Sexp_examples.insertion_for_new_example sexp_examples input_sexp
+                |> Option.iter ~f:(File_corrections.add_insertion ~filename);
+                (match error_already_placed with
+                 | true -> ()
+                 | false -> File_corrections.disable_due_to_pending_error ~filename));
+             print_s
+               [%message
+                 Ppx_quick_test_common.test_failed_message ~input:(input_sexp : Sexp.t)]
+           | exception exn ->
+             print_s
+               [%message
+                 Ppx_quick_test_common.test_failed_message
+                   ~exception_encountered_when_converting_input_to_sexp:(exn : exn)]);
           match Trailing_output_error.of_error output with
-          | None -> print_cr ?cr ?hide_positions ~here:here_pos [%sexp (output : Error.t)]
+          | None ->
+            (match Queue_of_crs_error.of_error output with
+             | None ->
+               print_cr ?cr ?hide_positions ~here:here_pos [%sexp (output : Error.t)]
+             | Some { crs } -> Queue.iter crs ~f:print_endline)
           | Some
               (Ppx_quick_test_trailing_output_error { trailing_output; input }, backtrace)
             ->
