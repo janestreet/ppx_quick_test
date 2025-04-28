@@ -18,6 +18,12 @@ module Trailing_output_error : sig
   val of_error : Error.t -> With_backtrace.t option
 end
 
+module Queue_of_crs_error : sig
+  type t = { crs : string Queue.t } [@@deriving sexp]
+
+  val of_error : Error.t -> t option
+end
+
 val assert_no_expect_test_trailing_output
   :  Lexing.position
   -> ('a -> Sexp.t)
@@ -44,7 +50,8 @@ module type S = sig
     -> shrinker:'a Base_quickcheck.Shrinker.t
     -> filename:string
     -> error_already_placed:bool
-         (** note: the instance is passed across all quick test calls within a file (using enclose_impl) *)
+         (** note: the instance is passed across all quick test calls within a file (using
+             enclose_impl) *)
     -> ('a -> unit IO.t)
     -> unit IO.t
 end
