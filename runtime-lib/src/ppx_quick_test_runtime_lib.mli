@@ -18,8 +18,8 @@ module Trailing_output_error : sig
   val of_error : Error.t -> With_backtrace.t option
 end
 
-module Queue_of_crs_error : sig
-  type t = { crs : string Queue.t } [@@deriving sexp]
+module List_of_crs_error : sig
+  type t = { crs : string list } [@@deriving sexp]
 
   val of_error : Error.t -> t option
 end
