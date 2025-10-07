@@ -23,8 +23,8 @@ module Trailing_output_error = struct
   ;;
 end
 
-module Queue_of_crs_error = struct
-  type t = { crs : string Queue.t } [@@deriving sexp]
+module List_of_crs_error = struct
+  type t = { crs : string list } [@@deriving sexp]
 
   let of_error error =
     let error_as_sexp = [%sexp (error : Error.t)] in
@@ -156,10 +156,10 @@ module Make (Arg : Arg) = struct
                    ~exception_encountered_when_converting_input_to_sexp:(exn : exn)]);
           match Trailing_output_error.of_error output with
           | None ->
-            (match Queue_of_crs_error.of_error output with
+            (match List_of_crs_error.of_error output with
              | None ->
                print_cr ?cr ?hide_positions ~here:here_pos [%sexp (output : Error.t)]
-             | Some { crs } -> Queue.iter crs ~f:print_endline)
+             | Some { crs } -> List.iter crs ~f:print_endline)
           | Some
               (Ppx_quick_test_trailing_output_error { trailing_output; input }, backtrace)
             ->
