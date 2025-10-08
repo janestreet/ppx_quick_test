@@ -46,8 +46,19 @@ let parse_parameters_and_body_from_expression expression
   in
   let parse_one_parameter expression : (pattern * core_type) option * expression =
     match expression.pexp_desc with
-    | Pexp_fun (Nolabel, None, pattern, rest_of_expression) ->
-      parse_pattern_and_type_from_argument pattern, rest_of_expression
+    | Pexp_function (param :: rest_params, None, body) -> (
+      match param.pparam_desc with
+      | Pparam_val (Nolabel, None, pattern) ->
+        let rest_of_expression =
+          match rest_params, body with
+          | [], Pfunction_body body_expr -> body_expr
+          | _ ->
+            { expression with
+              pexp_desc = Pexp_function (rest_params, None, body)
+            }
+        in
+        parse_pattern_and_type_from_argument pattern, rest_of_expression
+      | _ -> None, expression)
     | _ -> None, expression
   in
   let parse_all_parameters expression =
