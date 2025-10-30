@@ -112,6 +112,23 @@ let%quick_test (_ [@trials 500]) = fun (a : int) (b : int) -> assert (a + b = b 
 * EXPR Type    = `Expect_test_helpers_base.CR.t`
 * EXPR Default = `Expect_test_helpers_base.CR.CR`
 
+Note that, even if you specify `[@cr]` you likely have to also include a
+`Printexc.record_backtrace false` to prevent a CR from being inserted due to a backtrace.
+
+<!-- $MDX file=examples/examples.ml,part=cr -->
+```ocaml
+let%quick_test (_ [@cr Comment]) =
+  fun (a : int) ->
+  Printexc.record_backtrace false;
+  assert (some_broken_property a);
+  [%expect
+    {|
+    ("quick test: test failed" (input 17))
+    (* require-failed: ppx/ppx_quick_test/examples/examples.ml:LINE:COL. *)
+    ("Assert_failure examples.ml:LINE:COL" ())
+    |}]
+;;
+```
 
 `[@examples <EXPR>]`
 
