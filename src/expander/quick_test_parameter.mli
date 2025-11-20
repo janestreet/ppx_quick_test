@@ -1,7 +1,8 @@
 open! Core
 open Ppxlib
 
-(* The names of the parameters that are passed into [Ppx_quick_test_runtime_lib.run_quick_test] *)
+(* The names of the parameters that are passed into
+   [Ppx_quick_test_runtime_lib.run_quick_test] *)
 type t =
   | Config
   | Trials

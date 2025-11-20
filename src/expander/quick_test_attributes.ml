@@ -31,7 +31,8 @@ module Generator = struct
 end
 
 module Attribute_name = struct
-  (* The names of the attributes that are written by the user in the form [@parameter_name] *)
+  (* The names of the attributes that are written by the user in the form
+     [@parameter_name] *)
   type t =
     | Config
     | Trials

@@ -207,8 +207,7 @@ let expand_to_value_binding loc name parameters body quickcheck_failed_expects a
   value_binding ~pat ~expr
 ;;
 
-(*
-   The expand function roughly generates the following:
+(* The expand function roughly generates the following:
 
    {[
      let%expect_test ( "TEST_NAME" [@tags <TAGS> ] ) =
@@ -227,15 +226,17 @@ let expand_to_value_binding loc name parameters body quickcheck_failed_expects a
    - The "TEST_NAME" could also be a wildcard [ _ ]
    - [%here] is actually a location pointing to let%quick_test top level location
    - The [%expect "quickcheck: test failed"] only exist if they existed in the body.
-     Without this, if an error occurs within the quick test, the build system would
-     place a [%expect "quickcheck: test failed"] in the source code after the body.
-     This would be interpreted as being inside the body, which causes an expect block
-     that changes each time you accept it.
+     Without this, if an error occurs within the quick test, the build system would place
+     a [%expect "quickcheck: test failed"] in the source code after the body. This would
+     be interpreted as being inside the body, which causes an expect block that changes
+     each time you accept it.
    - We simply pass the value binding attributes through, which allows other ppxs to use
-     them further down the line (e.g. [@@expect.uncaught_exn] interacting with let%expect_test)
+     them further down the line (e.g. [@@expect.uncaught_exn] interacting with
+     let%expect_test)
    - We also pass user provided attributes as arguments to run_quick_test
    - If an [@tags] attribute is present on the quick_test, it will pass it along to the
-     generated expect test, so one can control if the quick test requires flambda, no-js, etc
+     generated expect test, so one can control if the quick test requires flambda, no-js,
+     etc
 *)
 let expand
   { loc
