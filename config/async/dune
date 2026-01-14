@@ -1,6 +1,6 @@
 (library
- (public_name ppx_quick_test.async)
  (name ppx_quick_test_async)
+ (public_name ppx_quick_test.async)
  (libraries async_kernel async.async_quickcheck core
    expect_test_helpers_async
    expect_test_helpers_core.expect_test_helpers_base

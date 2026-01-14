@@ -16,17 +16,19 @@ depends: [
   "base"
   "base_quickcheck"
   "core"
-  "core_kernel"
   "expect_test_helpers_async"
   "expect_test_helpers_core"
   "ppx_expect"
+  "ppx_helpers"
   "ppx_here"
+  "ppx_inline_test"
   "ppx_jane"
   "ppx_sexp_conv"
   "ppx_sexp_message"
   "ppxlib_jane"
   "stdio"
   "dune"                      {>= "3.17.0"}
+  "ocaml-compiler-libs"       {= "v0.17.0+ox"}
   "ppxlib"                    {= "0.33.0+ox"}
 ]
 available: arch != "arm32" & arch != "x86_32"

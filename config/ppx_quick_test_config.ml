@@ -2,9 +2,9 @@ open! Core
 
 let run
   (type a)
-  ~here_pos
-  ?config
-  ?trials
+  ~here_pos:_
+  ~config
+  ~trials
   ~examples
   (module M : Base_quickcheck.Test.S with type t = a)
   ~(f : a -> unit Or_error.t)
@@ -22,16 +22,10 @@ let run
         ~f:(fun () ->
           Or_error.try_with_join ~backtrace:true (fun () ->
             let result = f elt in
-            Ppx_quick_test_runtime_lib.assert_no_expect_test_trailing_output
-              here_pos
-              M.sexp_of_t
-              elt;
             let crs = Atomic.get crs |> List.rev in
             if List.is_empty crs
             then result
-            else
-              Or_error.error_s
-                [%sexp ({ crs } : Ppx_quick_test_runtime_lib.List_of_crs_error.t)])))
+            else Or_error.error_s [%sexp (crs : string list)])))
 ;;
 
 include Ppx_quick_test_runtime_lib.Make (struct

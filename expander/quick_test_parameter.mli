@@ -17,5 +17,8 @@ type t =
   | Sexp_of
   | Property_function
   | Error_already_placed
+[@@deriving compare, sexp_of]
+
+include Comparator.S with type t := t
 
 val to_arg_label : t -> arg_label
