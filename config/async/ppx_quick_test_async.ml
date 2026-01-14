@@ -3,9 +3,9 @@ open Async_kernel
 
 let run
   (type a)
-  ~here_pos
-  ?(config : Base_quickcheck.Test.Config.t option)
-  ?(trials : int option)
+  ~here_pos:_
+  ~(config : Base_quickcheck.Test.Config.t option)
+  ~(trials : int option)
   ~examples
   (module M : Base_quickcheck.Test.S with type t = a)
   ~(f : a -> unit Or_error.t Deferred.t)
@@ -42,19 +42,13 @@ let run
         (fun cr -> Atomic.update crs ~pure_f:(fun crs -> cr :: crs))
         ~f:(fun () ->
           let%bind result = f elt in
-          Ppx_quick_test_runtime_lib.assert_no_expect_test_trailing_output
-            here_pos
-            M.sexp_of_t
-            elt;
           let crs = Atomic.get crs |> List.rev in
           if List.is_empty crs
           then return result
-          else
-            Deferred.Or_error.error_s
-              [%sexp ({ crs } : Ppx_quick_test_runtime_lib.List_of_crs_error.t)]))
+          else Deferred.Or_error.error_s [%sexp (crs : string list)]))
 ;;
 
-module Ppx_quick_test_core = Ppx_quick_test_runtime_lib.Make (struct
+module Ppx_quick_test_config = Ppx_quick_test_runtime_lib.Make (struct
     module IO = Deferred
 
     let run = run

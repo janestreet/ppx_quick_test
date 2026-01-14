@@ -6,4 +6,4 @@
  (kind ppx_rewriter)
  (preprocess no_preprocessing)
  (ppx_runtime_libraries expect_test_helpers_core.expect_test_helpers_base
-   core ppx_quick_test.core ppx_quick_test.runtime_lib))
+   core ppx_quick_test.config ppx_quick_test.runtime_lib))

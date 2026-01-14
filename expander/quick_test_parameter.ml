@@ -1,20 +1,26 @@
 open! Core
 open Ppxlib
 
-type t =
-  | Config
-  | Trials
-  | Cr
-  | Examples
-  | Hide_positions
-  | Sexp_examples
-  | Generator
-  | Shrinker
-  | Here_pos
-  | Filename
-  | Sexp_of
-  | Property_function
-  | Error_already_placed
+module T = struct
+  type t =
+    | Config
+    | Trials
+    | Cr
+    | Examples
+    | Hide_positions
+    | Sexp_examples
+    | Generator
+    | Shrinker
+    | Here_pos
+    | Filename
+    | Sexp_of
+    | Property_function
+    | Error_already_placed
+  [@@deriving compare, sexp_of]
+end
+
+include T
+include Comparator.Make (T)
 
 let to_arg_label = function
   | Config -> Labelled "config"

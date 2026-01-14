@@ -4,52 +4,56 @@ ppx_quick_test
 let%quick_test
 ==============
 
-The `let%expect_test` equivalent for quickcheck - a syntax extension for writing
-quickcheck tests. For example:
+A ppx for making writing quickcheck tests simpler. For example:
 
 ```ocaml skip
 open! Core
 
-let%quick_test "int comparison is transitive" =
-  fun (a : int) (b : int) (c : int) -> assert (if a > b && b > c then a > c else true)
+let%expect_test "int comparison is transitive" =
+  let%quick_test prop (a : int) (b : int) (c : int) =
+    assert (if a > b && b > c then a > c else true)
+  in
+  [%expect {| |}]
 ;;
 ```
 
 ## New syntactic constructs
 
-The following construct is now a valid structure item:
+The following construct is now a valid expression:
 
 ```ocaml skip
-let%quick_test "name" = fun (<param> : <type>) ... (<param> : <type>) -> <body>
+let%quick_test fun_name (<param> : <type>) ... (<param> : <type>) = <body> in
 ```
 
-- We may write `_` instead of `"name"` for anonymous tests
 - There must be at least one provided parameter
 - Types must be provided for all parameters
 - Types must implement `sexp_of_t`
 - The `<body>` tests some property of the supplied parameters.
-- The `<body>` returns a `unit` on a success, and raises on a failure. If 
-  `ppx_quick_test_async` is opened, it returns a `unit Deferred.t`.
+- The `<body>` returns a `unit` on a success, and raises on a failure (or uses the
+  cr-printing mechanisms of `Expect_test_helpers_base`).
+  If `ppx_quick_test_async` is opened, it returns a `unit Deferred.t`.
 
 
 ## How do I get started?
 
 Add `ppx_quick_test` as a preprocessor to your build file. For example
 
+<div class="js-only">
 ```lisp skip
 (library ((name your_lib) (preprocess (pps (ppx_quick_test)))))
 ```
+</div>
 
-NOTE: If you are using dune outside of Jane Street, the syntax is:
-
+<div class="public-release-only">
 ```lisp skip
 (library (name your_lib) (preprocess (pps ppx_quick_test)))
 ```
+</div>
 
 ## Automatic Regression Tests
 
 
-If quick test finds a failing input, ppx_quick_test can "remember" failing inputs with
+If quick test finds a failing input, `ppx_quick_test` can "remember" failing inputs with
 `[@remember_failures]`. Using this requires your type to additionally have `t_of_sexp`.
 
 This feature is opt-in as it might not make sense to remember every test case that has
@@ -67,13 +71,20 @@ provided below, in the Attributes section.
 ### Test Scoped Attributes
 
 Test scoped attributes are used to configure a quick test. They are attached to the
-test name. For example:
+predicate binding. For example:
 
 ```ocaml skip
-let%quick_test "name" [@first] [@second] =
-    fun  (param1 : type1) (param2 : type2) -> <body>
-let%quick_test _ [@first] [@second] =
-    fun  (param1 : type1) (param2 : type2) -> <body>
+let%expect_test "name" =
+  let%quick_test[@first] [@second] prop1 (param1 : type1) (param2 : type2) =
+    body
+  in
+  (* or *)
+  let%quick_test prop2 (param1 : type1) (param2 : type2) =
+    body
+  [@@first] [@@second]
+  in
+  [%expect {| |}]
+;;
 ```
 
 Available test scoped attributes are:
@@ -86,10 +97,12 @@ Available test scoped attributes are:
 
 <!-- $MDX file=examples/examples.ml,part=config -->
 ```ocaml
-let%quick_test (_
-  [@config { Base_quickcheck.Test.default_config with seed = Deterministic "seed" }])
-  =
-  fun (a : int) (b : int) -> assert (a + b = b + a)
+let%expect_test _ =
+  let%quick_test prop (a : int) (b : int) =
+    assert (a + b = b + a)
+      [@@config { Base_quickcheck.Test.default_config with seed = Deterministic "seed" }]
+  in
+  [%expect {| |}]
 ;;
 ```
 
@@ -103,7 +116,10 @@ let%quick_test (_
 
 <!-- $MDX file=examples/examples.ml,part=trials -->
 ```ocaml
-let%quick_test (_ [@trials 500]) = fun (a : int) (b : int) -> assert (a + b = b + a)
+let%expect_test _ =
+  let%quick_test[@trials 500] prop (a : int) (b : int) = assert (a + b = b + a) in
+  [%expect {| |}]
+;;
 ```
 
 `[@cr <EXPR>]`
@@ -117,10 +133,11 @@ Note that, even if you specify `[@cr]` you likely have to also include a
 
 <!-- $MDX file=examples/examples.ml,part=cr -->
 ```ocaml
-let%quick_test (_ [@cr Comment]) =
-  fun (a : int) ->
-  Printexc.record_backtrace false;
-  assert (some_broken_property a);
+let%expect_test _ =
+  let%quick_test[@cr Comment] prop (a : int) =
+    Printexc.record_backtrace false;
+    assert (some_broken_property a)
+  in
   [%expect
     {|
     ("quick test: test failed" (input 17))
@@ -138,8 +155,11 @@ let%quick_test (_ [@cr Comment]) =
 
 <!-- $MDX file=examples/examples.ml,part=examples -->
 ```ocaml
-let%quick_test (_ [@examples [ 1, 0; 0, 0 ]]) =
-  fun (a : int) (b : int) -> assert (a + b = b + a)
+let%expect_test _ =
+  let%quick_test[@examples [ 1, 0; 0, 0 ]] prop (a : int) (b : int) =
+    assert (a + b = b + a)
+  in
+  [%expect {| |}]
 ;;
 ```
 
@@ -153,22 +173,13 @@ let%quick_test (_ [@examples [ 1, 0; 0, 0 ]]) =
 
 <!-- MDX file=examples/examples.ml,part=remember_failures -->
 ```ocaml skip
-let%quick_test _ [@remember_failures {|(1 0)|} {|(0 0)|}] =
-  fun (a : int) (b : int) -> assert (a + b = b + a)
+let%expect_test _ =
+  let%quick_test prop (a : int) (b : int) =
+    assert (a + b = b + a)
+    [@@examples.remember_failures {|(1 0)|} {|(0 0)|}]
+  in
+  [%expect {| |}]
 ;;
-```
-
-`[@tags <EXPR>]`
-
-* Tags to pass along to the generated expect test, useful to specify that a quick_test
-  runs in "no-js", "fast-flambda", etc. See the list of supported tags in the
-  [ppx_inline_test docs](https://github.com/janestreet/ppx_inline_test?tab=readme-ov-file#tags)
-* EXPR Type    = `(t1 * ...* tn) list`
-* EXPR Default = `[]`
-
-<!-- $MDX file=examples/examples.ml,part=tags -->
-```ocaml
-let%quick_test (_ [@tags "no-js"]) = fun (a : int) (b : int) -> assert (a + b = b + a)
 ```
 
 ### Type Scoped Attributes
@@ -177,10 +188,15 @@ Type scoped attributes used to configure a property of a specific input type.
 They are attached to the parameter's type. For example:
 
 ```ocaml skip
-let%quick_test _ =
-    fun  (param1 : type1 [@first] [@second])
-         (param2 : type2 [@third])
-         -> <body>
+let%expect_test _ =
+  let%quick_test prop
+    (param1 : type1 [@first] [@second])
+    (param2 : type2 [@third])
+    =
+    body
+  in
+  [%expect {| |}]
+;;
 ```
 
 Available type scoped attributes are:
@@ -193,9 +209,15 @@ Available type scoped attributes are:
 * EXPR Default = `[%quickcheck.generator: your_type]`
 
 ```ocaml skip
-let%quick_test _ = fun (a : int [@generator Int.gen_incl 0 10])
-                       (b : int)
-                       -> assert (a + b = b + a)
+let%expect_test _ =
+  let%quick_test prop
+    (a : int [@generator Int.gen_incl 0 10])
+    (b : int)
+    =
+    assert (a + b = b + a)
+  in
+  [%expect {| |}]
+;;
 ```
 
 
@@ -212,7 +234,10 @@ let%quick_test _ = fun (a : int [@generator Int.gen_incl 0 10])
 
 <!-- $MDX file=examples/examples.ml,part=basic -->
 ```ocaml
-let%quick_test _ = fun (a : int) (b : int) -> assert (a + b = b + a)
+let%expect_test _ =
+  let%quick_test prop (a : int) (b : int) = assert (a + b = b + a) in
+  [%expect {| |}]
+;;
 ```
 
 ### Kitchen Sink
@@ -222,15 +247,17 @@ default values.
 
 <!-- MDX file=examples/examples.ml,part=all_attributes -->
 ```ocaml skip
-let%quick_test (_ [@config Base_quickcheck.Test.default_config]
-                [@cr Expect_test_helpers_base.CR.CR]
-                [@hide_positions false]
-                [@generator [%quickcheck.generator: int * int * int]]
-                [@shrinker [%quickcheck.shrinker: int * int * int]]
-                [@examples []]
-                (* [@remember_failures] *))
-  =
-  fun (a : int) (b : int) (c : int) -> assert (if a < b && b < c then a < c else true)
+let%expect_test _ =
+  let%quick_test prop (a : int) (b : int) (c : int) =
+    assert (if a < b && b < c then a < c else true)
+      [@@config Base_quickcheck.Test.default_config]
+      [@@trials 1_000] (* [trials] overrides [config.test_count] *)
+      [@@cr Expect_test_helpers_base.CR.CR]
+      [@@hide_positions false]
+      [@@examples []]
+      [@@remember_failures]
+  in
+  [%expect {| |}]
 ;;
 ```
 
@@ -285,33 +312,34 @@ A: This is caused by a failure to generate a quickcheck shrinker on `your_type`.
    - Disable shrinking by providing the atomic shrinker: `[@shrinker Base_quickcheck.Shrinker.atomic]`
 
 
-Q : Why don't you support syntax `let%quick_test "name" (a : int) (b : int) = ...` instead of
-`let%quick_test "name" = fun (a : int) (b : int) -> ...`?
-
-A: This is caused by a limitation in the underlying parser - the former syntax is unable to be parsed, even
-though it is a valid AST representation.
-
-
 ## Expansion
 
 The ppx below:
 
 ```ocaml skip
-let%quick_test "relation is transitive" (a : int) (b : int) (c : int) =
-assert (if relation a b && relation b c then relation a c else true)
+let%expect_test "relation is transitive" =
+  let%quick_test prop (a : int) (b : int) (c : int) =
+    assert (if relation a b && relation b c then relation a c else true)
+  in
+  [%expect {| |}]
+;;
 ```
 
 will expand into something like:
 
 ```ocaml skip
 let%expect_test "relation is transitive" =
+  let prop (a : int) (b : int) (c : int) =
+    assert (if relation a b && relation b c then relation a c else true)
+  in
   Expect_test_helpers_base.quickcheck_m
     [%here]
     (module struct
       type t = int * int * int [@@deriving quickcheck, sexp_of]
     end)
-    (fun (a, b, c) ->
-      assert (if relation a b && relation b c then relation a c else true))
+    (fun (a, b, c) -> prop a b c);
+  [%expect {| |}]
+;;
 ```
 
 Note: Rather than using `quickcheck_m` we use the a custom method in the runtime library with
