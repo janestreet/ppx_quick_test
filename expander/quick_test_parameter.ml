@@ -16,7 +16,7 @@ module T = struct
     | Sexp_of
     | Property_function
     | Error_already_placed
-  [@@deriving compare, sexp_of]
+  [@@deriving compare ~localize, sexp_of]
 end
 
 include T

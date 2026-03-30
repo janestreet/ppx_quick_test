@@ -5,4 +5,4 @@
    base_quickcheck.ppx_quickcheck ppx_sexp_conv ppxlib ppxlib.stdppx
    ppxlib_jane)
  (preprocess
-  (pps ppxlib.metaquot ppx_jane)))
+  (pps ppxlib.metaquot ppx_jane -compare-require-explicit-locality)))

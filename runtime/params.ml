@@ -11,10 +11,13 @@ end
 
 type ('tup, 'fn, 'res) many =
   | [] : (unit, 'res, 'res) many
-  | ( :: ) : 'a One.t * ('tup, 'fn, 'res) many -> ('a * 'tup, 'a -> 'fn, 'res) many
+  | ( :: ) :
+      'a 'tup 'fn 'res.
+      'a One.t * ('tup, 'fn, 'res) many
+      -> ('a * 'tup, 'a -> 'fn, 'res) many
 
 type ('tup, 'fn, 'res) t =
-  | One : 'a One.t -> ('a, 'a -> 'res, 'res) t
+  | One : 'a 'res. 'a One.t -> ('a, 'a -> 'res, 'res) t
   | Many : ('tup, 'fn, 'res) many -> ('tup, 'fn, 'res) t
 
 let call : type tup fn res. (tup, fn, res) t -> tup -> fn -> res =
