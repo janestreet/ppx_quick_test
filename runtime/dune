@@ -5,4 +5,5 @@
    ppx_expect.make_corrected_file ocaml-compiler-libs.common
    ppx_expect.runtime ppx_quick_test_common stdio)
  (preprocess
-  (pps ppx_sexp_message ppx_sexp_conv ppx_jane)))
+  (pps ppx_sexp_message ppx_sexp_conv ppx_jane
+    -compare-require-explicit-locality)))

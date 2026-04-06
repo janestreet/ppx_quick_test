@@ -1,7 +1,7 @@
 open! Core
 
 let run
-  (type a)
+  (type a : value_or_null)
   ~here_pos:_
   ~config
   ~trials

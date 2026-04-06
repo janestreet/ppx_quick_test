@@ -17,7 +17,7 @@ type t =
   | Sexp_of
   | Property_function
   | Error_already_placed
-[@@deriving compare, sexp_of]
+[@@deriving compare ~localize, sexp_of]
 
 include Comparator.S with type t := t
 

@@ -10,7 +10,7 @@ module Make (Arg : Types_intf.Arg) = struct
   module IO = Arg.IO
 
   let run_quick_test
-    (type tup fn)
+    (type (tup : value_or_null) fn)
     ~here_pos
     ~config
     ~cr

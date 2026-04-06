@@ -13,7 +13,8 @@ module type S = sig
   module IO : IO
 
   val run_quick_test
-    :  here_pos:Source_code_position.t
+    : ('tup : value_or_null) 'fn.
+    here_pos:Source_code_position.t
     -> config:Base_quickcheck.Test.Config.t option
          (** default is [Base_quickcheck.Test.default_config] *)
     -> cr:CR.t option (** default is [CR] *)
@@ -31,7 +32,8 @@ module type Arg = sig
   module IO : IO
 
   val run
-    :  here_pos:Lexing.position
+    : ('a : value_or_null).
+    here_pos:Lexing.position
     -> config:Base_quickcheck.Test.Config.t option
     -> trials:int option (** if provided, overrides the number of trials in [config] *)
     -> examples:'a list

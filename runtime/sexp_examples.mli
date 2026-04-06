@@ -16,7 +16,10 @@ type t =
   | Empty of Location.t (** The location of the [[@sexp_examples]] attribute *)
   | List of One.t Nonempty_list.t
 
-val get_parsed_examples : t -> ('tup, _, _) Params.t -> 'tup list Or_error.t
+val get_parsed_examples
+  : ('tup : value_or_null) 'fn 'res.
+  t -> ('tup, 'fn, 'res) Params.t -> 'tup list Or_error.t
+
 val insertion_for_new_example : t -> Sexp.t -> File_corrections.Insertion.t option
 
 module For_testing : sig

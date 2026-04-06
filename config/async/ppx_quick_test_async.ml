@@ -2,7 +2,7 @@ open! Core
 open Async_kernel
 
 let run
-  (type a)
+  (type a : value_or_null)
   ~here_pos:_
   ~(config : Base_quickcheck.Test.Config.t option)
   ~(trials : int option)

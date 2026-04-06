@@ -3,4 +3,4 @@
  (name ppx_quick_test_common)
  (libraries base)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane -compare-require-explicit-locality)))

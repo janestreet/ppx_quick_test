@@ -1,7 +1,7 @@
 open! Core
 
 module One = struct
-  type 'a t =
+  type ('a : value_or_null) t =
     { sexp_of : 'a -> Sexp.t
     ; of_sexp : (Sexp.t -> 'a) option
     ; generator : 'a Quickcheck.Generator.t
@@ -9,16 +9,21 @@ module One = struct
     }
 end
 
-type ('tup, 'fn, 'res) many =
+type ('tup : value_or_null, 'fn, 'res) many =
   | [] : (unit, 'res, 'res) many
-  | ( :: ) : 'a One.t * ('tup, 'fn, 'res) many -> ('a * 'tup, 'a -> 'fn, 'res) many
+  | ( :: ) :
+      ('a : value_or_null) 'tup 'fn 'res.
+      'a One.t * ('tup, 'fn, 'res) many
+      -> ('a * 'tup, 'a -> 'fn, 'res) many
 
-type ('tup, 'fn, 'res) t =
-  | One : 'a One.t -> ('a, 'a -> 'res, 'res) t
+type ('tup : value_or_null, 'fn, 'res) t =
+  | One : ('a : value_or_null) 'res. 'a One.t -> ('a, 'a -> 'res, 'res) t
   | Many : ('tup, 'fn, 'res) many -> ('tup, 'fn, 'res) t
 
-let call : type tup fn res. (tup, fn, res) t -> tup -> fn -> res =
-  let rec loop : type tup fn res. (tup, fn, res) many -> tup -> fn -> res =
+let call : type (tup : value_or_null) fn res. (tup, fn, res) t -> tup -> fn -> res =
+  let rec loop
+    : type (tup : value_or_null) fn res. (tup, fn, res) many -> tup -> fn -> res
+    =
     fun params input f ->
     match params, input with
     | [], () -> f
@@ -30,8 +35,12 @@ let call : type tup fn res. (tup, fn, res) t -> tup -> fn -> res =
     | Many many -> loop many tup fn
 ;;
 
-let sexp_of_tup : type tup fn res. (tup, fn, res) t -> (tup -> Sexp.t) Staged.t =
-  let rec loop : type tup fn res. (tup, fn, res) many -> tup -> Sexp.t list =
+let sexp_of_tup
+  : type (tup : value_or_null) fn res. (tup, fn, res) t -> (tup -> Sexp.t) Staged.t
+  =
+  let rec loop
+    : type (tup : value_or_null) fn res. (tup, fn, res) many -> tup -> Sexp.t list
+    =
     fun params tup ->
     match params, tup with
     | [], () -> []
@@ -42,13 +51,17 @@ let sexp_of_tup : type tup fn res. (tup, fn, res) t -> (tup -> Sexp.t) Staged.t 
   | Many many -> stage (fun tup -> Sexp.List (loop many tup))
 ;;
 
-let tup_of_sexp : type tup fn res. (tup, fn, res) t -> (Sexp.t -> tup) Staged.t =
+let tup_of_sexp
+  : type (tup : value_or_null) fn res. (tup, fn, res) t -> (Sexp.t -> tup) Staged.t
+  =
   let one_of_sexp (one : _ One.t) sexp =
     match one.of_sexp with
     | Some of_sexp -> of_sexp sexp
     | None -> raise_s [%message "[ppx_quick_test] bug! Unexpectedly called [of_sexp]."]
   in
-  let rec loop : type tup fn res. (tup, fn, res) many -> Sexp.t list -> tup =
+  let rec loop
+    : type (tup : value_or_null) fn res. (tup, fn, res) many -> Sexp.t list -> tup
+    =
     fun params sexps ->
     match params, sexps with
     | [], [] -> ()
@@ -65,9 +78,12 @@ let tup_of_sexp : type tup fn res. (tup, fn, res) t -> (Sexp.t -> tup) Staged.t 
       | Atom _ -> raise_s [%message "expected list of sexps"])
 ;;
 
-let tup_generator : type tup fn res. (tup, fn, res) t -> tup Quickcheck.Generator.t =
+let tup_generator
+  : type (tup : value_or_null) fn res. (tup, fn, res) t -> tup Quickcheck.Generator.t
+  =
   let open Quickcheck.Generator.Let_syntax in
-  let rec loop : type tup fn res. (tup, fn, res) many -> tup Quickcheck.Generator.t
+  let rec loop
+    : type (tup : value_or_null) fn res. (tup, fn, res) many -> tup Quickcheck.Generator.t
     = function
     | [] -> return ()
     | one :: params ->
@@ -80,9 +96,13 @@ let tup_generator : type tup fn res. (tup, fn, res) t -> tup Quickcheck.Generato
   | Many many -> loop many
 ;;
 
-let tup_shrinker : type tup fn res. (tup, fn, res) t -> tup Quickcheck.Shrinker.t =
+let tup_shrinker
+  : type (tup : value_or_null) fn res. (tup, fn, res) t -> tup Quickcheck.Shrinker.t
+  =
   let module Shrinker = Quickcheck.Shrinker in
-  let rec loop : type tup fn res. (tup, fn, res) many -> tup Quickcheck.Shrinker.t list
+  let rec loop
+    : type (tup : value_or_null) fn res.
+      (tup, fn, res) many -> tup Quickcheck.Shrinker.t list
     = function
     | [] -> []
     | one :: params ->
