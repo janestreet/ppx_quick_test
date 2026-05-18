@@ -18,7 +18,7 @@ depends: [
   "base_quickcheck"
   "core"
   "expect_test_helpers_async"
-  "expect_test_helpers_core"
+  "expect_test_helpers_base"
   "ppx_expect"
   "ppx_helpers"
   "ppx_here"
@@ -32,7 +32,7 @@ depends: [
   "ocaml-compiler-libs"       {= "v0.17.0+ox"}
   "ppxlib"                    {= "0.33.0+ox"}
 ]
-available: arch != "arm32" & arch != "x86_32"
+available: arch != "x86_32"
 synopsis: "Spiritual equivalent of let%expect_test, but for property based tests as an ergonomic wrapper to write quickcheck tests."
 description: "
 Part of the Jane Street's PPX rewriters collection.
