@@ -1,4 +1,4 @@
-open! Base
+open! Ppx_helpers.Base_lite
 open Ppxlib
 open Ast_builder.Default
 
@@ -56,23 +56,29 @@ module Parameters = struct
       Param { label; core_type }
   ;;
 
-  let parse { pvb_expr = expression; pvb_loc; _ } =
-    match
-      Ppxlib_jane.Shim.Expression_desc.of_parsetree ~loc:pvb_loc expression.pexp_desc
-    with
-    | Pexp_function (parameters, _constraint, Pfunction_body _body) ->
-      List.map parameters ~f:parse_one
-    | Pexp_function (_, _, Pfunction_cases _) ->
-      Location.raise_errorf ~loc:expression.pexp_loc "[function] syntax not supported"
-    | _ ->
-      Location.raise_errorf
-        ~loc:expression.pexp_loc
-        {|
+  let raise_expected_a_function ~loc =
+    Location.raise_errorf
+      ~loc
+      {|
 "ppx_quick_test" expects a function with at least one parameter. For example:
 {[
     let%%quick_test my_test (x : int) = assert (x * x >= 0) in
 ]}
 |}
+  ;;
+
+  let parse ({ pvb_expr = expression; pvb_loc; _ } as value_binding) =
+    match value_binding.pvb_constraint with
+    | Some (_ : value_constraint) -> raise_expected_a_function ~loc:expression.pexp_loc
+    | None ->
+      (match
+         Ppxlib_jane.Shim.Expression_desc.of_parsetree ~loc:pvb_loc expression.pexp_desc
+       with
+       | Pexp_function (parameters, _constraint, Pfunction_body _body) ->
+         List.map parameters ~f:parse_one
+       | Pexp_function (_, _, Pfunction_cases _) ->
+         Location.raise_errorf ~loc:expression.pexp_loc "[function] syntax not supported"
+       | _ -> raise_expected_a_function ~loc:expression.pexp_loc)
   ;;
 end
 
@@ -85,7 +91,7 @@ let make_run_test
   =
   let here_pos = Ppx_here_expander.lift_position ~loc in
   let passthrough param =
-    match Map.find passthroughs param with
+    match Quick_test_parameter.Map.find passthroughs param with
     | None -> [%expr None]
     | Some expr -> [%expr Some [%e expr]]
   in
@@ -93,9 +99,9 @@ let make_run_test
     match remember_failures with
     | Ignore -> [%expr Ignore]
     | Empty attr_location -> [%expr Empty [%e loc_to_expr attr_location]]
-    | List examples ->
+    | List (hd :: tl) ->
       let example_exprs =
-        Nonempty_list.to_list examples
+        hd :: tl
         |> List.map ~f:(fun { expr; body; body_location; delimiters } ->
           let body = pexp_constant ~loc (Pconst_string (body, loc, delimiters)) in
           let body_location = loc_to_expr body_location in

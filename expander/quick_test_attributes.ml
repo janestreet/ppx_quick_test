@@ -1,4 +1,4 @@
-open! Core
+open! Ppx_helpers.Base_lite
 open Ppxlib
 
 let declare name pattern k =
@@ -12,7 +12,7 @@ let consume attr node =
 ;;
 
 module Passthroughs = struct
-  type t = expression Map.M(Quick_test_parameter).t
+  type t = expression Quick_test_parameter.Map.t
 
   let declare name parameter =
     declare name Ast_pattern.(single_expr_payload __) (fun value -> parameter, value)
@@ -35,7 +35,7 @@ module Passthroughs = struct
           let acc = List.append (Option.to_list t_opt) acc in
           value_binding, acc)
     in
-    value_binding, Map.of_alist_exn (module Quick_test_parameter) passthroughs
+    value_binding, Quick_test_parameter.Map.of_alist_exn passthroughs
   ;;
 end
 
@@ -60,7 +60,7 @@ module Remember_failures = struct
   type t =
     | Ignore
     | Empty of location
-    | List of One.t Nonempty_list.t
+    | List of One.t Nonempty_list_type.Nonempty_list.t
 
   let remember_failures =
     declare

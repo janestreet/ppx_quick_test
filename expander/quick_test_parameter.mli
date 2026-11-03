@@ -1,4 +1,4 @@
-open! Core
+open! Ppx_helpers.Base_lite
 open Ppxlib
 
 (* The names of the parameters that are passed into
@@ -17,8 +17,8 @@ type t =
   | Sexp_of
   | Property_function
   | Error_already_placed
-[@@deriving compare ~localize, sexp_of]
+[@@deriving compare, sexp_of]
 
-include Comparator.S with type t := t
+module Map : Map.S with type key := t
 
 val to_arg_label : t -> arg_label

@@ -1,11 +1,11 @@
-open! Core
+open! Ppx_helpers.Base_lite
 open Ppxlib
 
 module Passthroughs : sig
   (** Attributes whose payloads get directly passed to the runtime; e.g.
       [[@config my_config]] passes [~config:my_config] to
       [Ppx_quick_test_config.run_quick_test]. *)
-  type t = expression Map.M(Quick_test_parameter).t
+  type t = expression Quick_test_parameter.Map.t
 end
 
 module Remember_failures : sig
@@ -26,7 +26,7 @@ module Remember_failures : sig
     | Empty of location
     (** [@remember_failures], with no payload; the [location] is the location of the full
         attribute *)
-    | List of One.t Nonempty_list.t (** [@remember_failures _ ...] *)
+    | List of One.t Nonempty_list_type.Nonempty_list.t (** [@remember_failures _ ...] *)
 end
 
 module Examples : sig

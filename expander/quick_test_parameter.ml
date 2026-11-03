@@ -1,4 +1,4 @@
-open! Core
+open! Ppx_helpers.Base_lite
 open Ppxlib
 
 module T = struct
@@ -16,11 +16,11 @@ module T = struct
     | Sexp_of
     | Property_function
     | Error_already_placed
-  [@@deriving compare ~localize, sexp_of]
+  [@@deriving compare, sexp_of]
 end
 
 include T
-include Comparator.Make (T)
+module Map = Map.Make (T)
 
 let to_arg_label = function
   | Config -> Labelled "config"
