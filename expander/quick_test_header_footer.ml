@@ -1,4 +1,4 @@
-open! Core
+open! Ppx_helpers.Base_lite
 open! Ppxlib
 
 let expand_impl_header loc =

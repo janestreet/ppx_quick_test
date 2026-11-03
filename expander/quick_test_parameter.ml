@@ -1,4 +1,4 @@
-open! Core
+open! Ppx_helpers.Base_lite
 open Ppxlib
 
 module T = struct
@@ -20,7 +20,7 @@ module T = struct
 end
 
 include T
-include Comparator.Make (T)
+module Map = Map.Make (T)
 
 let to_arg_label = function
   | Config -> Labelled "config"

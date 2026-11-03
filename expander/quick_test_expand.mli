@@ -1,4 +1,4 @@
-open! Base
+open! Ppx_helpers.Base_lite
 open Ppxlib
 
 (** [expand ~loc value_binding maybe_rec rest] expands

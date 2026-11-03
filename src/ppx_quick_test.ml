@@ -1,4 +1,4 @@
-open! Core
+open! Ppx_helpers.Base_lite
 open Ppxlib
 open Ppx_quick_test_expander
 
